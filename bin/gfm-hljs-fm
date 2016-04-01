@@ -1,0 +1,50 @@
+#!/usr/bin/env node
+
+'use strict';
+
+const fs     = require('fs');
+const render = require('../lib/gfm-hljs-fm.js');
+const argv   = require('minimist')(process.argv.slice(2));
+
+var logRender = (input, options) => console.log(render(input, options));
+
+var options = {};
+
+for (let o in argv) {
+  if (o !== '_') {
+    options[o] = argv[o];
+  }
+}
+
+if (argv._.length === 1 && argv._[0] === '-') {
+  // Read input stream
+
+  var streamData = '';
+
+  process.stdin.resume();
+  process.stdin.setEncoding('utf8');
+  process.stdin.on('data', function (chunk) {
+    if (chunk === '\n') {
+      logRender(streamData, options);
+      streamData = '';
+      return;
+    }
+    streamData += chunk;
+  });
+  process.stdin.on('end', function(){
+    logRender(streamData, options);
+  });
+
+} else if (argv._.length) {
+  argv._.forEach((filename) => {
+    try {
+      logRender(fs.readFileSync(filename, 'utf8'), options);
+    } catch (e) {
+      console.error('Error: '.red + "File '" + filename + "' does not exist");
+      throw e;
+      process.exit(1);
+    }
+  });
+} else {
+  process.exit(0);
+}
